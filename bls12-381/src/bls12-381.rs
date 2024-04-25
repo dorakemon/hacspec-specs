@@ -16,7 +16,7 @@ public_nat_mod!( //Custom Macro - defining a new type with some functions - well
     type_name: Scalar,
     type_of_canvas: ScalarCanvas,
     bit_size_of_field: 256,
-    modulo_value: "8000000000000000000000000000000000000000000000000000000000000000" //0x8000000000000000000000000000000000000000000000000000000000000000
+    modulo_value: "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001" //0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 );
 
 //bool is "isPointAtInfinity"
@@ -673,8 +673,7 @@ fn test_g1_arithmetic() {
 
 #[cfg(test)]
 #[test]
-fn test_g1_mul_standard()
-{
+fn test_g1_mul_standard() {
     let g = g1();
     let m = Scalar::ONE();
     assert_eq!(g, g1mul(m, g));
@@ -688,13 +687,12 @@ fn test_g1_mul_standard()
 
 #[cfg(test)]
 #[test]
-fn test_g1_mul_zero()
-{
+fn test_g1_mul_zero() {
     let g = g1();
     let m = Scalar::ZERO();
     let h = g1mul(m, g);
     assert!(h.2);
-} 
+}
 
 #[cfg(test)]
 #[test]
@@ -747,8 +745,7 @@ fn test_g2_arithmetic() {
 
 #[cfg(test)]
 #[test]
-fn test_g2_mul_standard()
-{
+fn test_g2_mul_standard() {
     let g = g2();
     let m = Scalar::ONE();
     assert_eq!(g, g2mul(m, g));
@@ -762,13 +759,12 @@ fn test_g2_mul_standard()
 
 #[cfg(test)]
 #[test]
-fn test_g2_mul_zero()
-{
+fn test_g2_mul_zero() {
     let g = g2();
     let m = Scalar::ZERO();
     let h = g2mul(m, g);
     assert!(h.2);
-} 
+}
 
 #[cfg(test)]
 #[test]
