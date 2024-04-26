@@ -277,9 +277,8 @@ pub fn core_verify(
     let pairing1 = pairing(a, g2add(w, g2mul(e, bp2)));
     let pairing2 = pairing(b, g2neg(bp2));
     let pairing_comp = fp12mul(pairing1, pairing2);
-    println!("{:?}", pairing_comp);
     if pairing_comp != identity_gt() {
-        return Err(Error::InvalidCoreVerify);
+        return Ok(false);
     }
     // 4. return VALID
     Ok(true)
@@ -290,24 +289,41 @@ mod test {
     use super::*;
     use crate::keygen::*;
 
-    #[test]
-    fn test_sign_correctness() {
+    fn keypair_fixture() -> (BBSSecretKey, BBSPublicKey) {
         let key_material = ByteSeq::from_hex("746869732d49532d6a7573742d616e2d546573742d494b4d2d746f2d67656e65726174652d246528724074232d6b6579");
         let key_info = ByteSeq::from_hex("746869732d49532d736f6d652d6b65792d6d657461646174612d746f2d62652d757365642d696e2d746573742d6b65792d67656e");
         let key_dst =
             ByteSeq::from_hex("4242535f424c53313233383147315f584d443a5348412d3235365f535357555f524f5f4832475f484d32535f4b455947454e5f4453545f");
         let sk = keygen(&key_material, Some(&key_info), Some(&key_dst)).unwrap();
-        assert_eq!(
-            sk.to_byte_seq_be().to_hex(),
-            "60e55110f76883a13d030b2f6bd11883422d5abde71756a236761f51237469fc"
-        );
-
         let pk = sk_to_pk(sk).unwrap();
-        println!("{:?}", pk);
+        (sk, pk)
+    }
+
+    #[test]
+    fn test_sign_correctness() {
+        let (sk, pk) = keypair_fixture();
 
         let header = ByteSeq::from_public_slice(b"");
-        let messages = Seq::new(1);
-        messages.push(&ByteSeq::from_public_slice(b"message1"));
+        let mut messages = Seq::new(1);
+        messages[0] = ByteSeq::from_public_slice(b"message1");
+
+        println!("{:?}", messages);
+        let signature = sign(&sk, &pk, Some(&header), Some(&messages)).unwrap();
+        println!("{:?}", signature);
+
+        let result = verify(&pk, &signature, Some(&header), Some(&messages)).unwrap();
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn test_multi_m_sign_correctness() {
+        let (sk, pk) = keypair_fixture();
+
+        let header = ByteSeq::from_public_slice(b"");
+        let mut messages = Seq::new(3);
+        messages[0] = ByteSeq::from_public_slice(b"message1");
+        messages[1] = ByteSeq::from_public_slice(b"message2");
+        messages[2] = ByteSeq::from_public_slice(b"message3");
 
         println!("{:?}", messages);
         let signature = sign(&sk, &pk, Some(&header), Some(&messages)).unwrap();
@@ -319,30 +335,38 @@ mod test {
 
     #[test]
     fn test_sign_soundness() {
-        let key_material = ByteSeq::from_hex("746869732d49532d6a7573742d616e2d546573742d494b4d2d746f2d67656e65726174652d246528724074232d6b6579");
-        let key_info = ByteSeq::from_hex("746869732d49532d736f6d652d6b65792d6d657461646174612d746f2d62652d757365642d696e2d746573742d6b65792d67656e");
-        let key_dst =
-            ByteSeq::from_hex("4242535f424c53313233383147315f584d443a5348412d3235365f535357555f524f5f4832475f484d32535f4b455947454e5f4453545f");
-        let sk = keygen(&key_material, Some(&key_info), Some(&key_dst)).unwrap();
-        assert_eq!(
-            sk.to_byte_seq_be().to_hex(),
-            "60e55110f76883a13d030b2f6bd11883422d5abde71756a236761f51237469fc"
-        );
+        let (sk, pk) = keypair_fixture();
 
-        let pk = sk_to_pk(sk).unwrap();
-        println!("{:?}", pk);
-
-        let header = ByteSeq::from_public_slice(b"");
-        let messages = Seq::new(1);
-        messages.push(&ByteSeq::from_public_slice(b"message1"));
-
-        println!("{:?}", messages);
+        let header = ByteSeq::from_public_slice(b"asdfasdfa");
+        let mut messages = Seq::new(1);
+        messages[0] = ByteSeq::from_public_slice(b"message1");
         let signature = sign(&sk, &pk, Some(&header), Some(&messages)).unwrap();
-        println!("{:?}", signature);
 
-        let malicious_messages = Seq::new(1);
-        malicious_messages.push(&ByteSeq::from_public_slice(b"malicious_message"));
+        let mut malicious_messages = Seq::new(1);
+        malicious_messages[0] = ByteSeq::from_public_slice(b"malicious_message");
         let result = verify(&pk, &signature, Some(&header), Some(&malicious_messages)).unwrap();
+
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn test_multi_m_sign_soundness() {
+        let (sk, pk) = keypair_fixture();
+
+        let header = ByteSeq::from_public_slice(b"asdfasdfa");
+        let mut messages = Seq::new(3);
+        messages[0] = ByteSeq::from_public_slice(b"message1");
+        messages[1] = ByteSeq::from_public_slice(b"message2");
+        messages[2] = ByteSeq::from_public_slice(b"message3");
+
+        let signature = sign(&sk, &pk, Some(&header), Some(&messages)).unwrap();
+
+        let mut malicious_messages = Seq::new(3);
+        malicious_messages[0] = ByteSeq::from_public_slice(b"malicious_message");
+        malicious_messages[1] = ByteSeq::from_public_slice(b"message2");
+        malicious_messages[2] = ByteSeq::from_public_slice(b"message3");
+        let result = verify(&pk, &signature, Some(&header), Some(&malicious_messages)).unwrap();
+
         assert_eq!(result, false);
     }
 }

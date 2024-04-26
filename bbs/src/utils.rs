@@ -64,7 +64,7 @@ pub fn create_generators(count: usize, api_id: Option<&ByteSeq>) -> Seq<G1> {
     generator_seed = generator_seed
         .concat(api_id)
         .concat(&ByteSeq::from_public_slice(b"MESSAGE_GENERATOR_SEED"));
-    let generators = Seq::<G1>::new(count);
+    let mut generators = Seq::<G1>::new(count);
 
     // 1. v = expand_message(generator_seed, seed_dst, expand_len)
     let v = expand_message_xmd(&generator_seed, &seed_dst, EXPAND_LEN);
@@ -78,7 +78,7 @@ pub fn create_generators(count: usize, api_id: Option<&ByteSeq>) -> Seq<G1> {
             EXPAND_LEN,
         );
         // 4. generator_i = hash_to_curve_g1(v, generator_dst)
-        generators.push(&g1_hash_to_curve_sswu(&v, &generator_dst));
+        generators[i - 1] = g1_hash_to_curve_sswu(&v, &generator_dst);
     }
     // 5. return (generator_1, ..., generator_count)
     generators
@@ -115,10 +115,10 @@ pub fn message_to_scalar(messages: &Seq<ByteSeq>, api_id: Option<&ByteSeq>) -> S
     let l = messages.len();
     // 2. for i in (1, ..., L):
     // 3.     msg_scalar_i = hash_to_scalar(messages[i], map_dst)
-    let msg_scalars: Seq<Scalar> = Seq::new(l);
+    let mut msg_scalars: Seq<Scalar> = Seq::new(l);
     for i in 0..l {
         let msg_scalar_i = hash_to_scalar(&messages[i], &map_dst);
-        msg_scalars.push(&msg_scalar_i);
+        msg_scalars[i] = msg_scalar_i;
     }
     msg_scalars
 }
