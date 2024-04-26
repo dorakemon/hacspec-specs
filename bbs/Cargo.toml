@@ -1,0 +1,13 @@
+[package]
+name = "bbs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hacspec-lib = { git = "https://github.com/hacspec/hacspec.git" }
+hacspec-bls12-381 = { path = "../bls12-381" }
+hacspec-bls12-381-hash = { path = "../bls12-381-hash" }
+
+[dev-dependencies]
+quickcheck = "1"
+quickcheck_macros = "1"
